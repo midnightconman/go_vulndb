@@ -1,28 +1,17 @@
 #!/bin/sh
 
-_MODULES=$( curl -sSfL https://vuln.go.dev/index.json | jq -r '. | keys | @sh' | tr -d "\'" )
+# Write index db
+curl -sSfL -o db.json https://vuln.go.dev/index/db.json
 
-# Write index.json
-curl -sSfL -o index.json https://vuln.go.dev/index.json
+# Write index modules
+curl -sSfL -o modules.json https://vuln.go.dev/index/modules.json
+_IDS=$( cat modules.json | jq -r '.[].vulns[].id' | sort | uniq )
 
-# Create module directories
-for m in $_MODULES ; do
-  mkdir -p $m
-done
-
-# clean up directories that won't include any files
-rm -rf aahframe.work stdlib toolchain
-
-# Populate module directories with json files
-for m in $_MODULES ; do
-  echo "curl -sSfL -o $m.json https://vuln.go.dev/$m.json"
-  curl -sSfL -o $m.json https://vuln.go.dev/$m.json
-done
-
-IDS=$( jq -r '.[].id' $( find . -type f -name '*.json' | grep -v './ID' ) | sort | uniq )
+# Write index vulns
+curl -sSfL -o vulns.json https://vuln.go.dev/index/vulns.json
 
 mkdir -p ID
-for i in $IDS ; do
+for i in $_IDS ; do
   echo "curl -sSfL -o ID/$i.json https://vuln.go.dev/ID/$i.json"
   curl -sSfL -o ID/$i.json https://vuln.go.dev/ID/$i.json
 done
